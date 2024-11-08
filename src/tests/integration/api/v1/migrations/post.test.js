@@ -1,9 +1,8 @@
-import database from 'infra/database'
 import orchestrator from 'src/tests/orchestrator'
 
 beforeAll(async () => {
   await orchestrator.waitForAllServices()
-  await database.query('drop schema public cascade; create schema public;')
+  await orchestrator.clearDatabase()
 })
 
 async function fetchPostMigrations() {
@@ -12,22 +11,30 @@ async function fetchPostMigrations() {
   })
 }
 
-test('POST to /api/v1/migrations should return 200', async () => {
-  const response1 = await fetchPostMigrations()
+describe('POST /api/v1/migrations', () => {
+  describe('Anonymous user', () => {
+    describe('Running pending migrations', () => {
+      test('First time', async () => {
+        const response = await fetchPostMigrations()
 
-  expect(response1.status).toBe(201)
+        expect(response.status).toBe(201)
 
-  const responseBory1 = await response1.json()
+        const responseBory = await response.json()
 
-  expect(Array.isArray(responseBory1)).toBe(true)
+        expect(Array.isArray(responseBory)).toBe(true)
 
-  expect(responseBory1.length).toBeGreaterThan(0)
+        expect(responseBory.length).toBeGreaterThan(0)
+      })
 
-  const response2 = await fetchPostMigrations()
+      test('Second time', async () => {
+        const response = await fetchPostMigrations()
 
-  expect(response2.status).toBe(200)
+        expect(response.status).toBe(200)
 
-  const responseBory2 = await response2.json()
+        const responseBory = await response.json()
 
-  expect(responseBory2.length).toBe(0)
+        expect(responseBory.length).toBe(0)
+      })
+    })
+  })
 })
